@@ -108,6 +108,22 @@ if data_inicial and data_final:
                                                           'Serviços', 'Cliente', 'Valor Serviços']], hide_index=True, 
                                                           use_container_width=True)
         
-        
+        lista_reservas_operadora = df_sales_operadora['Reserva'].unique().tolist()
 
-        
+        st.divider()
+
+        row1 = st.columns(2)
+
+        with row1[0]:
+
+            reserva = st.selectbox('Conferir Faturamento de Reserva', sorted(lista_reservas_operadora), index=None)
+
+        if reserva:
+
+            df_ref = df_sales_operadora[df_sales_operadora['Reserva']==reserva].reset_index(drop=True)
+
+            valor_total = df_ref['Valor Serviços'].sum()
+
+            with row1[0]:
+
+                st.write(f'Valor Total = R${valor_total}')
