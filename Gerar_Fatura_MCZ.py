@@ -2,6 +2,12 @@ import streamlit as st
 import mysql.connector
 import decimal
 import pandas as pd
+import selenium
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import time
 
 def bd_phoenix(vw_name):
     # Parametros de Login AWS
@@ -35,17 +41,36 @@ def bd_phoenix(vw_name):
     df = df.applymap(lambda x: float(x) if isinstance(x, decimal.Decimal) else x)
     return df
 
+def info_click_xpath(xpath, info, timeout=10):
+    campo = WebDriverWait(navegador, timeout).until(
+        EC.element_to_be_clickable((By.XPATH, xpath))
+    )
+    campo.click()
+    campo.send_keys(info)
+
+def click_xpath(xpath, timeout=40):
+    campo = WebDriverWait(navegador, timeout).until(
+        EC.element_to_be_clickable((By.XPATH, xpath))
+    )
+    campo.click()
+
 st.set_page_config(layout='wide')
 
 if not 'df_sales' in st.session_state:
 
     st.session_state.df_sales = bd_phoenix('vw_sales_partner')
 
+    st.session_state.df_sales = st.session_state.df_sales[(st.session_state.df_sales['Status_do_Servico']!='CANCELADO') & 
+                                                          ~(pd.isna(st.session_state.df_sales['Status da Reserva']))]\
+                                                            .reset_index(drop=True)
+
 st.title('Gerar Fatura - Maceió')
 
 st.divider()
 
 row0 = st.columns(2)
+
+row1 = st.columns(2)
 
 with row0[0]:
 
@@ -60,6 +85,10 @@ with row0[0]:
 if atualizar_dados:
 
     st.session_state.df_sales = bd_phoenix('vw_sales_partner')
+
+    st.session_state.df_sales = st.session_state.df_sales[(st.session_state.df_sales['Status_do_Servico']!='CANCELADO') & 
+                                                          ~(pd.isna(st.session_state.df_sales['Status da Reserva']))]\
+                                                            .reset_index(drop=True)
 
 st.divider()
 
@@ -86,8 +115,7 @@ if data_inicial and data_final:
 
     if operadora:
 
-        df_sales_operadora = df_sales_data_final[(df_sales_data_final['Nome_Parceiro']==operadora) & 
-                                                 ~(pd.isna(df_sales_data_final['Cod_Tarifa']))].reset_index(drop=True)\
+        df_sales_operadora = df_sales_data_final[(df_sales_data_final['Nome_Parceiro']==operadora)].reset_index(drop=True)\
         
         df_sales_operadora = pd.merge(df_sales_operadora, df_reservas_data_final_filtrado, on='Cod_Reserva', how='left')
 
@@ -112,8 +140,6 @@ if data_inicial and data_final:
 
         st.divider()
 
-        row1 = st.columns(2)
-
         with row1[0]:
 
             reserva = st.selectbox('Conferir Faturamento de Reserva', sorted(lista_reservas_operadora), index=None)
@@ -127,3 +153,49 @@ if data_inicial and data_final:
             with row1[0]:
 
                 st.write(f'Valor Total = R${valor_total}')
+
+    with row1[1]:
+
+        atualizar_reservas_phoenix = st.button('Atualizar Reservas s/ Tarifário')
+
+    if atualizar_reservas_phoenix:
+
+        lista_reservas_a_atualizar = df_sales_data_final[pd.isna(df_sales_data_final['Cod_Tarifa'])]['Cod_Reserva'].unique().tolist()
+
+        navegador = webdriver.Chrome()
+
+        navegador.maximize_window()
+
+        navegador.get('https://maceio.test.phoenix.comeia.org/login')
+
+        info_click_xpath('/html/body/main/div/div/div[2]/form/div/div[1]/div/input', 'comercialmcz@luckreceptivo.com.br')
+
+        info_click_xpath('/html/body/main/div/div/div[2]/form/div/div[2]/div/input', 'maceio@2023')
+
+        click_xpath('/html/body/main/div/div/div[2]/form/div/button')
+
+        time.sleep(3)
+
+        for reserva in lista_reservas_a_atualizar:
+
+            navegador.get(f'https://maceio.phoenix.comeialabs.com/new-reserve/index?ReserveSearch%5Breserve_code%5D={reserva}')
+
+            click_xpath('/html/body/main/div/div[4]/div/div/div[3]/table/tbody/tr/td[10]/a[6]/i')
+
+            time.sleep(30)
+
+            navegador.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+            time.sleep(5)
+
+            click_xpath('/html/body/main/div/div[4]/div/div/main/div/div/form/div/div/button')
+
+            time.sleep(2)
+
+            navegador.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+            time.sleep(2)
+
+            click_xpath('/html/body/div[3]/div/div/div/div[2]/div[2]/div[2]/div/div[2]/button[2]')
+
+            time.sleep(2)
