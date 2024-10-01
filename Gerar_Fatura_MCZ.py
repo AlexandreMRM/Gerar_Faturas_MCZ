@@ -41,6 +41,11 @@ if not 'df_sales' in st.session_state:
 
     st.session_state.df_sales = bd_phoenix('vw_sales_partner')
 
+    st.session_state.df_sales = st.session_state.df_sales[(st.session_state.df_sales['Status_do_Servico']!='CANCELADO') & 
+                                                          (st.session_state.df_sales['Status_do_Servico']!='RASCUNHO') &
+                                                          ~(pd.isna(st.session_state.df_sales['Status da Reserva']))]\
+                                                            .reset_index(drop=True)
+
 st.title('Gerar Fatura - Maceió')
 
 st.divider()
@@ -61,6 +66,11 @@ if atualizar_dados:
 
     st.session_state.df_sales = bd_phoenix('vw_sales_partner')
 
+    st.session_state.df_sales = st.session_state.df_sales[(st.session_state.df_sales['Status_do_Servico']!='CANCELADO') & 
+                                                          (st.session_state.df_sales['Status_do_Servico']!='RASCUNHO') &
+                                                          ~(pd.isna(st.session_state.df_sales['Status da Reserva']))]\
+                                                            .reset_index(drop=True)
+
 st.divider()
 
 if data_inicial and data_final:
@@ -80,7 +90,7 @@ if data_inicial and data_final:
     
     lista_operadoras = df_sales_data_final['Nome_Parceiro'].unique().tolist()
 
-    with row0[1]:
+    with row0[0]:
 
         operadora = st.selectbox('Operadoras', sorted(lista_operadoras), index=None)
 
@@ -98,7 +108,7 @@ if data_inicial and data_final:
         
         faturamento_total = df_sales_operadora['Valor Serviços'].sum()
 
-        with row0[1]:
+        with row0[0]:
 
             st.subheader(f'Valor Total à Faturar = R${faturamento_total}')
 
@@ -114,7 +124,7 @@ if data_inicial and data_final:
 
         row1 = st.columns(2)
 
-        with row1[0]:
+        with row0[0]:
 
             reserva = st.selectbox('Conferir Faturamento de Reserva', sorted(lista_reservas_operadora), index=None)
 
@@ -124,6 +134,20 @@ if data_inicial and data_final:
 
             valor_total = df_ref['Valor Serviços'].sum()
 
-            with row1[0]:
+            with row0[1]:
 
                 st.write(f'Valor Total = R${valor_total}')
+
+    with row0[1]:
+
+        lista_reservas_a_atualizar = df_sales_data_final[pd.isna(df_sales_data_final['Cod_Tarifa'])]['Cod_Reserva'].unique().tolist()
+
+        df_reservas_atualizar = pd.DataFrame(lista_reservas_a_atualizar, columns=['Reservas'])
+
+        st.write('Reservas p/ atualizar')
+
+        st.markdown(f"*existem {len(lista_reservas_a_atualizar)} reservas p/ atualizar*")
+
+        st.dataframe(df_reservas_atualizar, hide_index=True)
+
+        
