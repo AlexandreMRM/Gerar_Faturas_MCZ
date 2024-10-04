@@ -136,8 +136,10 @@ if data_inicial and data_final:
 
         lista_reservas_a_atualizar = df_sales_data_final[pd.isna(df_sales_data_final['Cod_Tarifa'])]['Cod_Reserva'].unique().tolist()
 
-        st.markdown(f"*existem {len(lista_reservas_a_atualizar)} reservas p/ atualizar*")
+        if len(lista_reservas_a_atualizar)>0:
 
-        df_reservas_atualizar = pd.DataFrame(lista_reservas_a_atualizar, columns=['Reserva'])
+            st.markdown(f"*existem {len(lista_reservas_a_atualizar)} reservas p/ atualizar*")
+    
+            df_reservas_atualizar = pd.DataFrame(lista_reservas_a_atualizar, columns=['Reserva'])
 
         st.dataframe(df_reservas_atualizar, hide_index=True)
