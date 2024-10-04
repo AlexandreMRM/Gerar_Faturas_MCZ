@@ -138,6 +138,6 @@ if data_inicial and data_final:
 
         st.markdown(f"*existem {len(lista_reservas_a_atualizar)} reservas p/ atualizar*")
 
-        df_reservas_atualizar = pd.Dataframe(lista_reservas_a_atualizar, columns='Reserva')
+        df_reservas_atualizar = pd.DataFrame(lista_reservas_a_atualizar, columns='Reserva')
 
         st.dataframe(df_reservas_atualizar, hide_index=True)
