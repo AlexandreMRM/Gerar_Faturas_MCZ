@@ -41,16 +41,13 @@ if not 'df_sales' in st.session_state:
 
     st.session_state.df_sales = bd_phoenix('vw_sales_partner')
 
-    st.session_state.df_sales = st.session_state.df_sales[(st.session_state.df_sales['Status_do_Servico']!='CANCELADO') & 
-                                                          (st.session_state.df_sales['Status_do_Servico']!='RASCUNHO') &
-                                                          ~(pd.isna(st.session_state.df_sales['Status da Reserva']))]\
-                                                            .reset_index(drop=True)
-
 st.title('Gerar Fatura - Maceió')
 
 st.divider()
 
 row0 = st.columns(2)
+
+row1 = st.columns(2)
 
 with row0[0]:
 
@@ -66,11 +63,6 @@ if atualizar_dados:
 
     st.session_state.df_sales = bd_phoenix('vw_sales_partner')
 
-    st.session_state.df_sales = st.session_state.df_sales[(st.session_state.df_sales['Status_do_Servico']!='CANCELADO') & 
-                                                          (st.session_state.df_sales['Status_do_Servico']!='RASCUNHO') &
-                                                          ~(pd.isna(st.session_state.df_sales['Status da Reserva']))]\
-                                                            .reset_index(drop=True)
-
 st.divider()
 
 if data_inicial and data_final:
@@ -85,7 +77,12 @@ if data_inicial and data_final:
     lista_reservas = df_reservas_data_final_filtrado['Cod_Reserva'].unique().tolist()
 
     df_sales_data_final = st.session_state.df_sales[(st.session_state.df_sales['Cod_Reserva'].isin(lista_reservas)) & 
-                                                    (st.session_state.df_sales['Status_Financeiro']=='A Faturar')]\
+                                                    (st.session_state.df_sales['Status_Financeiro']=='A Faturar') & 
+                                                    (st.session_state.df_sales['Status_do_Servico']!='CANCELADO') & 
+                                                    (st.session_state.df_sales['Status_do_Servico']!='RASCUNHO') &
+                                                    (st.session_state.df_sales['Status da Reserva']!='RASCUNHO') &
+                                                    ~(pd.isna(st.session_state.df_sales['Status da Reserva'])) & 
+                                                    (pd.isna(st.session_state.df_sales['Data Delecao']))]\
         .reset_index(drop=True) 
     
     lista_operadoras = df_sales_data_final['Nome_Parceiro'].unique().tolist()
@@ -96,15 +93,14 @@ if data_inicial and data_final:
 
     if operadora:
 
-        df_sales_operadora = df_sales_data_final[(df_sales_data_final['Nome_Parceiro']==operadora) & 
-                                                 ~(pd.isna(df_sales_data_final['Cod_Tarifa']))].reset_index(drop=True)\
+        df_sales_operadora = df_sales_data_final[(df_sales_data_final['Nome_Parceiro']==operadora)].reset_index(drop=True)\
         
         df_sales_operadora = pd.merge(df_sales_operadora, df_reservas_data_final_filtrado, on='Cod_Reserva', how='left')
 
         df_sales_operadora = \
             df_sales_operadora.rename(columns={'Cod_Reserva': 'Reserva', 'voucher': 'Voucher', 'Data Execucao_x': 'Data de Execução', 
                                                'Data Execucao_y': 'Data do Último Serviço', 'Nome_Servico': 'Serviços', 
-                                               'Valor_Venda': 'Valor Serviços'})
+                                               'Valor_Final_Real_Fatura': 'Valor Serviços'})
         
         faturamento_total = df_sales_operadora['Valor Serviços'].sum()
 
@@ -117,12 +113,10 @@ if data_inicial and data_final:
         container_dataframe.dataframe(df_sales_operadora[['Reserva', 'Voucher', 'Data de Execução', 'Data do Último Serviço', 
                                                           'Serviços', 'Cliente', 'Valor Serviços']], hide_index=True, 
                                                           use_container_width=True)
-        
+                                                        
         lista_reservas_operadora = df_sales_operadora['Reserva'].unique().tolist()
 
         st.divider()
-
-        row1 = st.columns(2)
 
         with row0[0]:
 
@@ -134,20 +128,16 @@ if data_inicial and data_final:
 
             valor_total = df_ref['Valor Serviços'].sum()
 
-            with row0[1]:
+            with row1[0]:
 
                 st.write(f'Valor Total = R${valor_total}')
 
     with row0[1]:
 
-        lista_reservas_a_atualizar = df_sales_data_final[pd.isna(df_sales_data_final['Cod_Tarifa'])]['Cod_Reserva'].unique().tolist()
-
-        df_reservas_atualizar = pd.DataFrame(lista_reservas_a_atualizar, columns=['Reservas'])
-
-        st.write('Reservas p/ atualizar')
-
         st.markdown(f"*existem {len(lista_reservas_a_atualizar)} reservas p/ atualizar*")
 
-        st.dataframe(df_reservas_atualizar, hide_index=True)
+        lista_reservas_a_atualizar = df_sales_data_final[pd.isna(df_sales_data_final['Cod_Tarifa'])]['Cod_Reserva'].unique().tolist()
 
-        
+        df_reservas_atualizar = pd.Dataframe(lista_reservas_a_atualizar, columns='Reserva')
+
+        st.dataframe(df_reservas_atualizar, hide_index=True)
