@@ -142,4 +142,4 @@ if data_inicial and data_final:
     
             df_reservas_atualizar = pd.DataFrame(lista_reservas_a_atualizar, columns=['Reserva'])
 
-        st.dataframe(df_reservas_atualizar, hide_index=True)
+            st.dataframe(df_reservas_atualizar, hide_index=True)
