@@ -24,4 +24,4 @@ COPY . .
 
 EXPOSE 8083
 
-CMD ["streamlit", "run", "Gerar_Faturas_MCZ.py", "--server.port=8083"]
+CMD ["streamlit", "run", "Gerar_Fatura_MCZ.py", "--server.port=8083"]
